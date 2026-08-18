@@ -15,6 +15,7 @@ const port = process.env.PORT || 3000;
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 const client = new MongoClient(setupDB.url);
 
@@ -49,10 +50,25 @@ app.get('/patients', async (req, res) => {
 });
 
 app.post('/calculate', async (req, res) => {
-    let ret = bmiFn(req.body.HeightCm, req.body.WeightKg);
+    const height = Number(req.body.HeightCm);
+    const weight = Number(req.body.WeightKg);
+
+    if (
+        !Number.isFinite(height) ||
+        !Number.isFinite(weight) ||
+        height <= 0 ||
+        weight <= 0
+    ) {
+        return res.status(400).send({
+            status: 400,
+            message: 'HeightCm and WeightKg must be positive numbers.',
+        });
+    }
+
+    let ret = bmiFn(height, weight);
     res.status(200).send({
-        HeightCm: req.body.HeightCm,
-        WeightKg: req.body.WeightKg,
+        HeightCm: height,
+        WeightKg: weight,
         BMI: ret.bmi,
         'Health Risk': ret.risk,
         'BMI Category': ret.bmiCat,
